@@ -7,9 +7,10 @@
 class FileSystemCreationTest : public ::testing::Test {
 protected:
     std::string testDiskPath = "test_virtual_disk.bin";
+    std::string testOutputPath = "test_output";
     FileSystemManager fsManager;
 
-    FileSystemCreationTest() : fsManager(testDiskPath) {}
+    FileSystemCreationTest() : fsManager(testDiskPath, testOutputPath) {}
 
     void SetUp() override {
         if (std::filesystem::exists(testDiskPath)) {
@@ -56,7 +57,7 @@ TEST_F(FileSystemCreationTest, SuperblockFieldsAreCorrect) {
     ASSERT_EQ(sb.magicNumber, 0x53465350u);
     ASSERT_EQ(sb.blockSize, 4096u);
     ASSERT_EQ(sb.inodesCount, 1024u);
-    ASSERT_EQ(sb.freeInodesCount, 1024u);
+    ASSERT_EQ(sb.freeInodesCount, 1023u);
 }
 
 TEST_F(FileSystemCreationTest, InodeTableIsZeroFilled) {
@@ -67,7 +68,7 @@ TEST_F(FileSystemCreationTest, InodeTableIsZeroFilled) {
     diskFile.seekg(0);
     diskFile.read(reinterpret_cast<char*>(&sb), sizeof(Superblock));
     
-    diskFile.seekg(sb.inodeTableOffset);
+    diskFile.seekg(sb.inodeTableOffset + sizeof(Inode));
     Inode testInode;
     diskFile.read(reinterpret_cast<char*>(&testInode), sizeof(Inode));
     
@@ -89,7 +90,7 @@ TEST_F(FileSystemCreationTest, InodeBitmapIsZeroFilled) {
     uint8_t bitmapByte;
     diskFile.read(reinterpret_cast<char*>(&bitmapByte), 1);
     
-    ASSERT_EQ(bitmapByte, 0);
+    ASSERT_EQ(bitmapByte, 1);
 }
 
 TEST_F(FileSystemCreationTest, BlockBitmapIsZeroFilled) {
@@ -128,7 +129,7 @@ TEST_F(FileSystemCreationTest, HandlesSmallDiskSize) {
 }
 
 TEST_F(FileSystemCreationTest, ThrowsOnInvalidPath) {
-    FileSystemManager invalidFs("/invalid/path/test.bin");
+    FileSystemManager invalidFs("/invalid/path/test.bin", testOutputPath);
     ASSERT_THROW(invalidFs.createVirtualFileSystem(1024 * 1024), std::runtime_error);
 }
 
@@ -148,4 +149,37 @@ TEST_F(FileSystemCreationTest, CalculatesCorrectBlockCountLargerSize) {
     diskFile.read(reinterpret_cast<char*>(&sb), sizeof(Superblock));
     ASSERT_EQ(sb.blocksCount, 2u);
     ASSERT_EQ(sb.freeBlocksCount, 2u);
+}
+class DirectoryOperationTest : public FileSystemCreationTest {
+protected:
+    void SetUp() override {
+        FileSystemCreationTest::SetUp();
+        fsManager.createVirtualFileSystem(1024 * 1024);
+    }
+};
+
+TEST_F(DirectoryOperationTest, CreateNestedDirectory) {
+    ASSERT_NO_THROW(fsManager.createDirectory("dir1"));
+    ASSERT_NO_THROW(fsManager.createDirectory("dir1/dir2"));
+}
+
+TEST_F(DirectoryOperationTest, DeleteNestedDirectory) {
+    fsManager.createDirectory("dir1");
+    fsManager.createDirectory("dir1/dir2");
+    ASSERT_NO_THROW(fsManager.deleteDirectory("dir1/dir2"));
+}
+
+TEST_F(DirectoryOperationTest, ThrowsOnNonEmptyDelete) {
+    fsManager.createDirectory("dir1");
+    fsManager.createDirectory("dir1/dir2");
+    ASSERT_THROW(fsManager.deleteDirectory("dir1"), std::runtime_error);
+}
+
+TEST_F(DirectoryOperationTest, ThrowsOnCreatingExisting) {
+    fsManager.createDirectory("dir1");
+    ASSERT_THROW(fsManager.createDirectory("dir1"), std::runtime_error);
+}
+
+TEST_F(DirectoryOperationTest, ThrowsOnInvalidPath) {
+    ASSERT_THROW(fsManager.createDirectory("nonexistent/dir"), std::runtime_error);
 }

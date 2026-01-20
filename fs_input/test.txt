@@ -1,0 +1,2 @@
+This is a test file. We will copy it to the virtual disk and then copy it back to the physical disk.
+Then we will compare the two files to make sure they are the same.
