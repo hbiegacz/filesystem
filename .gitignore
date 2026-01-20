@@ -41,3 +41,5 @@
 *.dwo
 
 build/*
+*.bin
+fs_output/*
