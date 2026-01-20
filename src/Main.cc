@@ -14,50 +14,71 @@
 using namespace std;
 
 string FILE_SYSTEM_PATH = "../file_system.bin";
+string FILE_SYSTEM_OUTPUT_PATH = "../fs_output";
 
 int main(){
-    cout << " ---- WELCOME TO THE FILE SYSTEM MANAGER ----" << endl;
-    FileSystemManager fsManager(FILE_SYSTEM_PATH);
+    cout << " +-------------------------------------------------------+" << endl;
+    cout << " |          WELCOME TO THE FILE SYSTEM MANAGER           |" << endl;
+    cout << " +-------------------------------------------------------+" << endl;
+
+    FileSystemManager fsManager(FILE_SYSTEM_PATH, FILE_SYSTEM_OUTPUT_PATH);
     int choice;
 
     do {
         printOptions();
-        cin >> choice;
+        if (!(cin >> choice)) {
+            cin.clear();
+            cin.ignore(1000, '\n');
+            cout << "Invalid input. Please enter a number." << endl;
+            continue;
+        }
 
-        switch (choice){
-            case 1:
-                fsManager.createVirtualFileSystem(askForFileSystemSize());
-                cout << "You can find it in the following location: " << FILE_SYSTEM_PATH << endl;
-                break;
-            case 2:
-                fsManager.copyFileFromPhysicalDisk(askForFileName());
-                break;
-            case 3:
-                fsManager.copyFileFromVirtualDisk(askForFileName());
-                break;
-            case 4:
-                fsManager.displayCatalogue();
-                break;
-            case 5:
-                fsManager.displayFileSystemInformation();
-                break;
-            case 6:
-                fsManager.displayVirtualDiskStatus();
-                break;
-            case 7:
-                // ASK FOR FILE NAME
-                fsManager.deleteFileFromVirtualDisk("test.txt");
-                break;
-            case 8:
-                fsManager.deleteVirtualDisk();
-                break;
-            case 9:
-                cout << "Goodbye!" << endl;
-                exit(0);
-                break;
-            default:
-                cout << "Invalid choice" << endl;
-                break;
+        try {
+            switch (choice){
+                case 1:
+                    fsManager.createVirtualFileSystem(askForFileSystemSize());
+                    cout << "You can find it in the following location: " << FILE_SYSTEM_PATH << endl;
+                    break;
+
+                case 2:
+                    fsManager.copyFileFromPhysicalDisk(askForFileName());
+                    break;
+                case 3:
+                    fsManager.copyFileFromVirtualDisk(askForFileName());
+                    break;
+
+                case 4:
+                    fsManager.deleteFileFromVirtualDisk(askForFileName());
+                    break;
+                case 5:
+                    fsManager.createDirectory(askForDirectoryPath());
+                    break;
+                case 6:
+                    fsManager.deleteDirectory(askForDirectoryPath());
+                    break;
+                case 7:
+                    fsManager.displayDirectory(askForDirectoryPath());
+                    break;
+                case 8:
+                    fsManager.displayFileSystemInformation();
+                    break;
+                case 9:
+                    fsManager.displayVirtualDiskStatus();
+                    break;
+                case 10:
+                    fsManager.deleteVirtualDisk();
+                    break;
+                case 11:
+                    cout << "Goodbye!" << endl;
+                    exit(0);
+                    break;
+                default:
+                    cout << "Invalid choice" << endl;
+                    break;
+            }
+        } catch (const std::exception& e) {
+            cerr << "\n[ERROR] An error occurred: " << e.what() << endl;
+            cout << "Returning to main menu..." << endl;
         }
     } while (choice != 9);
 
