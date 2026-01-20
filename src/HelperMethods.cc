@@ -27,3 +27,12 @@ int askForFileSystemSize(){
     cout << endl;
     return size;
 }
+
+string askForFileName(){
+    string fileName;
+    cout << "Please enter the name of the file to copy. Example: file.txt" << endl;
+    cout << "Your input: ";
+    cin >> fileName;
+    cout << endl;
+    return fileName;
+}

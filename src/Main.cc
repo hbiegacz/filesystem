@@ -30,12 +30,10 @@ int main(){
                 cout << "You can find it in the following location: " << FILE_SYSTEM_PATH << endl;
                 break;
             case 2:
-                // ASK FOR FILE NAME
-                fsManager.copyFileFromPhysicalDisk("test.txt");
+                fsManager.copyFileFromPhysicalDisk(askForFileName());
                 break;
             case 3:
-                // ASK FOR FILE NAME
-                fsManager.copyFileFromVirtualDisk("test.txt");
+                fsManager.copyFileFromVirtualDisk(askForFileName());
                 break;
             case 4:
                 fsManager.displayCatalogue();
