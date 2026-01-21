@@ -14,9 +14,8 @@ void printOptions(){
     cout << " |     6. Delete a directory                             |" << endl;
     cout << " |     7. Display directory                              |" << endl;
     cout << " |     8. Display file system information                |" << endl;
-    cout << " |     9. Display virtual disk status                    |" << endl;
-    cout << " |    10. Delete virtual disk                            |" << endl;
-    cout << " |    11. Exit                                           |" << endl;
+    cout << " |     9. Delete virtual disk                            |" << endl;
+    cout << " |    10. Exit                                           |" << endl;
     cout << " +-------------------------------------------------------+" << endl<<endl;
     cout << "Your choice: ";
 }

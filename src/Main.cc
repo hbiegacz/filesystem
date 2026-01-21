@@ -14,7 +14,7 @@
 using namespace std;
 
 string FILE_SYSTEM_PATH = "../file_system.bin";
-string FILE_SYSTEM_OUTPUT_PATH = "../fs_output";
+string FILE_SYSTEM_OUTPUT_PATH = "../output";
 
 int main(){
     cout << " +-------------------------------------------------------+" << endl;
@@ -63,12 +63,9 @@ int main(){
                     fsManager.displayFileSystemInformation();
                     break;
                 case 9:
-                    fsManager.displayVirtualDiskStatus();
-                    break;
-                case 10:
                     fsManager.deleteVirtualDisk();
                     break;
-                case 11:
+                case 10:
                     cout << "Goodbye!" << endl;
                     exit(0);
                     break;
@@ -80,7 +77,7 @@ int main(){
             cerr << "\n[ERROR] An error occurred: " << e.what() << endl;
             cout << "Returning to main menu..." << endl;
         }
-    } while (choice != 9);
+    } while (choice != 10);
 
     return 0;
 }

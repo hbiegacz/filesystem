@@ -55,8 +55,7 @@ class FileSystemManager{
         void displayDirectory(std::string directory_name);
         
         void displayFileSystemInformation();
-        void displayVirtualDiskStatus();
-        int deleteFileFromVirtualDisk(std::string file_name);
+        int deleteFileFromVirtualDisk(std::string path);
         int deleteVirtualDisk();
 
 
@@ -81,7 +80,12 @@ class FileSystemManager{
 
         void writeInode(uint32_t inodeIndex, const Inode& inode);
         Inode readInode(uint32_t inodeIndex);
-        Inode createInodeForFile(uint64_t fileSize, const std::vector<uint32_t>& dataBlocks);
+
+        template <typename T>
+        T readStruct(uint64_t offset);
+
+        template <typename T>
+        void writeStruct(uint64_t offset, const T& data);
 
         uint64_t getSourceFileSize(std::ifstream& sourceFile);
         uint32_t calculateRequiredBlocks(uint64_t fileSize, uint32_t blockSize);
@@ -96,7 +100,6 @@ class FileSystemManager{
         void removeDirectoryEntry(uint32_t directoryInodeIndex, const std::string& name);
         int findInodeInDirectory(uint32_t directoryInodeIndex, const std::string& name);
         std::vector<DirectoryEntry> readDirectoryEntries(const Inode& directoryInode);
-        void allocateDirectoryBlock(Superblock& sb, Inode& dirInode, uint32_t blockIdxInInode);
 
         int findInodeByPath(const std::string& path);
         void resolvePath(const std::string& path, uint32_t& parentInodeIndex, std::string& componentName);
