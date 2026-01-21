@@ -183,3 +183,23 @@ TEST_F(DirectoryOperationTest, ThrowsOnCreatingExisting) {
 TEST_F(DirectoryOperationTest, ThrowsOnInvalidPath) {
     ASSERT_THROW(fsManager.createDirectory("nonexistent/dir"), std::runtime_error);
 }
+class FileOperationTest : public FileSystemCreationTest {
+protected:
+    void SetUp() override {
+        FileSystemCreationTest::SetUp();
+        fsManager.createVirtualFileSystem(1024 * 1024);
+        std::ofstream f("dummy.txt");
+        f << "test data";
+        f.close();
+    }
+    void TearDown() override {
+        FileSystemCreationTest::TearDown();
+        if (std::filesystem::exists("dummy.txt")) std::filesystem::remove("dummy.txt");
+    }
+};
+
+TEST_F(FileOperationTest, DeleteFile) {
+    fsManager.copyFileFromPhysicalDisk("dummy.txt");
+    ASSERT_NO_THROW(fsManager.deleteFileFromVirtualDisk("dummy.txt"));
+    ASSERT_THROW(fsManager.copyFileFromVirtualDisk("dummy.txt"), std::runtime_error);
+}
