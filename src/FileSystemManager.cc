@@ -254,11 +254,6 @@ int FileSystemManager::deleteFileFromVirtualDisk(string path) {
     return 0;
 }
 
-int FileSystemManager::deleteVirtualDisk(){
-    cout << "Deleting virtual disk" << endl;
-    return 0;
-}
-
 /* ---------------------------------------------------------------PRIVATE HELPER METHODS ------------------------------------------------------- */
 
 // Plans where each filesystem section starts on disk with proper block alignment

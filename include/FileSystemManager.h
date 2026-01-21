@@ -49,14 +49,13 @@ class FileSystemManager{
 
         void copyFileFromPhysicalDisk(std::string file_name);
         void copyFileFromVirtualDisk(std::string file_name);
+        int deleteFileFromVirtualDisk(std::string path);
         
         void createDirectory(std::string directory_name);
         void deleteDirectory(std::string directory_name);
         void displayDirectory(std::string directory_name);
         
         void displayFileSystemInformation();
-        int deleteFileFromVirtualDisk(std::string path);
-        int deleteVirtualDisk();
 
 
     private:
