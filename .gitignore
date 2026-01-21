@@ -43,3 +43,4 @@
 build/*
 *.bin
 fs_output/*
+output/*
