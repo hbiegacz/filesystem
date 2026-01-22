@@ -14,20 +14,20 @@ class FileSystemManager{
 
         void copyFileFromPhysicalDisk(std::string file_name);
         void copyFileFromVirtualDisk(std::string file_name);
-        void deleteFileFromVirtualDisk(std::string path);
+        void deleteFileFromVirtualDisk(std::string path); // TODO: take links into account
         
         void createDirectory(std::string directory_name);
         void deleteDirectory(std::string directory_name);
         void displayDirectory(std::string directory_name);
         
-        void displayFileSystemInformation();
+        void displayFileSystemInformation(); // TODO: display link info?
         void displayDiskUsage();
 
-        void addLink(std::string path); // do katalogów i plików na raz?
-        void removeLink(std::string path);
+        void addLink(std::string source_path, std::string target_path);
+        void removeLink(std::string file_path);
 
-        void addBytes(std::string path, uint64_t bytes);
-        void removeBytes(std::string path, uint64_t bytes);
+        void addBytes(std::string file_path, uint64_t bytes);
+        void removeBytes(std::string file_path, uint64_t bytes);
 
 
     private:
@@ -59,7 +59,7 @@ class FileSystemManager{
         void removeDirectoryItem(uint32_t directoryInodeIndex, const std::string& name);
         std::vector<DirectoryItem> readDirectoryItems(const Inode& directoryInode);
 
-        void resolvePath(const std::string& path, uint32_t& parentInodeIndex, std::string& componentName);
+        std::pair<uint32_t, std::string> resolvePath(const std::string& path);
         uint64_t getSourceFileSize(std::ifstream& sourceFile);
         void validateFileSize(uint32_t requiredBlocks, uint32_t maxSupportedBlocks);
         uint32_t calculateRequiredBlocks(uint64_t fileSize, uint32_t blockSize);
@@ -67,10 +67,10 @@ class FileSystemManager{
 
         std::vector<uint32_t> allocateDataBlocks(std::vector<uint8_t>& blockBitmap, uint32_t requiredBlocks, uint32_t blockSize);
         uint32_t allocateSingleBlock(Superblock& sb, std::vector<uint8_t>& blockBitmap);
+        void deallocateInode(uint32_t inodeIndex, Inode& inode);
+        std::vector<uint32_t> getInodeBlockIndices(const Inode& inode);
         void writeIndirectPointers(uint32_t indirectBlockIndex, const std::vector<uint32_t>& dataBlocks, uint32_t blockSize);
         void writeFileDataToBlocks(std::ifstream& sourceFile, const std::vector<uint32_t>& dataBlocks, uint64_t fileSize, uint32_t blockSize, uint64_t dataBlocksOffset);
-        void readDirectBlocks(std::ifstream& diskFile, const Inode& inode, std::ofstream& destFile, uint32_t blockSize, uint64_t& bytesRemaining, uint64_t dataBlocksOffset);
-        void readIndirectBlocks(std::ifstream& diskFile, const Inode& inode, std::ofstream& destFile, uint32_t blockSize, uint64_t& bytesRemaining, uint64_t dataBlocksOffset);
 
         template <typename T>
         T readStruct(uint64_t offset);

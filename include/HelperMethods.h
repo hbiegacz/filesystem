@@ -8,3 +8,7 @@ int askForFileSystemSize();
 std::string askForFileName();
 
 std::string askForDirectoryPath();
+
+std::string askForSourcePath();
+
+std::string askForLinkPath();

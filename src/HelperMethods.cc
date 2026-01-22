@@ -11,11 +11,12 @@ void printOptions(){
     cout << " |     3. Copy file from virtual disk                    |" << endl;
     cout << " |     4. Delete file from virtual disk                  |" << endl;
     cout << " |     5. Create a directory                             |" << endl;
-    cout << " |     6. Delete a directory                             |" << endl;
+    cout << " |     6. Remove a directory                             |" << endl;
     cout << " |     7. Display directory                              |" << endl;
     cout << " |     8. Display file system information                |" << endl;
-    cout << " |     9. Delete virtual disk                            |" << endl;
-    cout << " |    10. Exit                                           |" << endl;
+    cout << " |     9. Add a link                                     |" << endl;
+    cout << " |    10. Remove a link                                  |" << endl;
+    cout << " |    11. Exit                                           |" << endl;
     cout << " +-------------------------------------------------------+" << endl<<endl;
     cout << "Your choice: ";
 }
@@ -45,4 +46,22 @@ string askForDirectoryPath() {
     cin >> directoryPath;
     cout << endl;
     return directoryPath;
+}
+
+string askForSourcePath() {
+    string linkPath;
+    cout << "Please enter the path for the file that the link will lead to.\nThe source of the link. Example: dir/link" << endl;
+    cout << "Your input: ";
+    cin >> linkPath;
+    cout << endl;
+    return linkPath;
+}
+
+string askForLinkPath() {
+    string linkPath;
+    cout << "Please enter the path to the link. \nExample: dir/link_name" << endl;
+    cout << "Your input: ";
+    cin >> linkPath;
+    cout << endl;
+    return linkPath;
 }

@@ -95,7 +95,7 @@ TEST_F(FileSystemCreationTest, BlockBitmapIsZeroFilled) {
     uint8_t bitmapByte;
     diskFile.read(reinterpret_cast<char*>(&bitmapByte), 1);
     
-    ASSERT_EQ(bitmapByte, 0);
+    ASSERT_EQ(bitmapByte, 1);
 }
 
 TEST_F(FileSystemCreationTest, DataBlocksAreZeroFilled) {
@@ -129,7 +129,7 @@ TEST_F(FileSystemCreationTest, CalculatesCorrectBlockCount) {
     Superblock sb;
     diskFile.read(reinterpret_cast<char*>(&sb), sizeof(Superblock));
     ASSERT_EQ(sb.blocksCount, 1u);
-    ASSERT_EQ(sb.freeBlocksCount, 1u);
+    ASSERT_EQ(sb.freeBlocksCount, 0u);
 }
 
 TEST_F(FileSystemCreationTest, CalculatesCorrectBlockCountLargerSize) {
@@ -138,7 +138,7 @@ TEST_F(FileSystemCreationTest, CalculatesCorrectBlockCountLargerSize) {
     Superblock sb;
     diskFile.read(reinterpret_cast<char*>(&sb), sizeof(Superblock));
     ASSERT_EQ(sb.blocksCount, 2u);
-    ASSERT_EQ(sb.freeBlocksCount, 2u);
+    ASSERT_EQ(sb.freeBlocksCount, 1u);
 }
 class DirectoryOperationTest : public FileSystemCreationTest {
 protected:

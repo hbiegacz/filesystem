@@ -64,9 +64,12 @@ int main(){
                     break;
 
                 case 9:
-                    // add link
+                    fsManager.addLink(askForSourcePath(), askForLinkPath());
                     break;
                 case 10:
+                    fsManager.removeLink(askForLinkPath());
+                    break;
+                case 11:
                     cout << "Goodbye!" << endl;
                     exit(0);
                     break;
