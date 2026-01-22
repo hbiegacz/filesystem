@@ -37,8 +37,8 @@ class FileSystemManager{
         std::fstream openDiskStream(std::ios_base::openmode mode);
         
         Superblock initializeSuperblock(uint32_t blockSize, uint32_t inodes, uint32_t blocks);
-        void initializeSection(std::ofstream& file, uint64_t offset, uint64_t size, bool isBitmap);
-        void fillWithZeros(std::ofstream& file, const char* data, uint64_t size);
+        void initializeSection(std::ostream& file, uint64_t offset, uint64_t size, bool isBitmap);
+        void fillWithZeros(std::ostream& file, const char* data, uint64_t size);
         uint64_t alignToBlock(uint64_t offset, uint32_t blockSize);
 
         Superblock readSuperblock();

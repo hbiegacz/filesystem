@@ -254,6 +254,121 @@ void FileSystemManager::removeLink(string path) {
     removeDirectoryItem(parentInodeIndex, name);
 }
 
+void FileSystemManager::addBytes(std::string file_path, uint64_t bytes) {
+    if (bytes == 0) return;
+
+    int inodeIndex = findInodeByPath(file_path);
+    if (inodeIndex < 0) throw runtime_error("File not found: " + file_path);
+
+    Inode inode = readInode(static_cast<uint32_t>(inodeIndex));
+    if (inode.isDirectory) throw runtime_error("Cannot add bytes to a directory: " + file_path);
+
+    Superblock sb = readSuperblock();
+    uint64_t oldSize = inode.fileSizeInBytes;
+    uint64_t newSize = oldSize + bytes;
+    
+    uint32_t oldBlocksCount = calculateRequiredBlocks(oldSize, sb.blockSize);
+    uint32_t newBlocksCount = calculateRequiredBlocks(newSize, sb.blockSize);
+
+    if (newBlocksCount > oldBlocksCount) {
+        uint32_t blocksToAdd = newBlocksCount - oldBlocksCount;
+        if (sb.freeBlocksCount < blocksToAdd) {
+            throw runtime_error("Not enough disk space to add " + to_string(bytes) + " bytes.");
+        }
+
+        vector<uint8_t> blockBitmap = readBitmap(sb.blockBitmapOffset, sb.blocksCount);
+        vector<uint32_t> newBlocks = allocateDataBlocks(blockBitmap, blocksToAdd, sb.blockSize);
+
+        vector<uint32_t> allBlocks = getInodeBlockIndices(inode);
+        allBlocks.insert(allBlocks.end(), newBlocks.begin(), newBlocks.end());
+
+        validateFileSize(static_cast<uint32_t>(allBlocks.size()), INODE_DIRECT_POINTERS + (sb.blockSize / sizeof(uint32_t)));
+
+        for (uint32_t i = 0; i < allBlocks.size() && i < INODE_DIRECT_POINTERS; ++i) {
+            inode.dataBlockIndexes[i] = allBlocks[i];
+        }
+
+        if (allBlocks.size() > INODE_DIRECT_POINTERS) {
+            if (inode.overflowBlockIndex == 0) {
+                inode.overflowBlockIndex = allocateSingleBlock(sb, blockBitmap);
+            }
+            writeIndirectPointers(inode.overflowBlockIndex, allBlocks, sb.blockSize);
+        }
+
+        sb.freeBlocksCount -= blocksToAdd;
+        writeBitmap(sb.blockBitmapOffset, blockBitmap);
+        writeSuperblock(sb);
+
+        // Zero out the newly allocated blocks
+        auto disk = openDiskStream(ios::in | ios::out);
+        vector<char> zeroBuffer(sb.blockSize, 0);
+        for (uint32_t blockIdx : newBlocks) {
+            uint64_t offset = sb.dataBlocksOffset + static_cast<uint64_t>(blockIdx) * sb.blockSize;
+            disk.seekp(static_cast<streamoff>(offset));
+            fillWithZeros(disk, zeroBuffer.data(), sb.blockSize);
+        }
+    }
+
+    inode.fileSizeInBytes = newSize;
+    writeInode(static_cast<uint32_t>(inodeIndex), inode);
+}
+
+void FileSystemManager::removeBytes(std::string file_path, uint64_t bytes) {
+    if (bytes == 0) return;
+
+    int inodeIndex = findInodeByPath(file_path);
+    if (inodeIndex < 0) throw runtime_error("File not found: " + file_path);
+
+    Inode inode = readInode(static_cast<uint32_t>(inodeIndex));
+    if (inode.isDirectory) throw runtime_error("Cannot remove bytes from a directory: " + file_path);
+
+    uint64_t oldSize = inode.fileSizeInBytes;
+    uint64_t newSize = 0;
+
+    if (bytes >= oldSize) {
+        cout << "[INFO] Requested removal of " << bytes << " bytes from a " << oldSize << " byte file. Setting size to 0." << endl;
+        newSize = 0;
+    } else {
+        newSize = oldSize - bytes;
+    }
+
+    Superblock sb = readSuperblock();
+    uint32_t oldBlocksCount = calculateRequiredBlocks(oldSize, sb.blockSize);
+    uint32_t newBlocksCount = calculateRequiredBlocks(newSize, sb.blockSize);
+
+    if (newBlocksCount < oldBlocksCount) {
+        vector<uint8_t> blockBitmap = readBitmap(sb.blockBitmapOffset, sb.blocksCount);
+        vector<uint32_t> allBlocks = getInodeBlockIndices(inode);
+
+        uint32_t blocksToFree = oldBlocksCount - newBlocksCount;
+        for (uint32_t i = 0; i < blocksToFree; ++i) {
+            uint32_t blockIdx = allBlocks.back();
+            setBitmapBit(blockBitmap, blockIdx, false);
+            allBlocks.pop_back();
+            sb.freeBlocksCount++;
+        }
+
+        // Update inode pointers
+        for (uint32_t i = 0; i < INODE_DIRECT_POINTERS; ++i) {
+            inode.dataBlockIndexes[i] = (i < allBlocks.size()) ? allBlocks[i] : 0;
+        }
+
+        if (allBlocks.size() <= INODE_DIRECT_POINTERS && inode.overflowBlockIndex != 0) {
+            setBitmapBit(blockBitmap, inode.overflowBlockIndex, false);
+            sb.freeBlocksCount++;
+            inode.overflowBlockIndex = 0;
+        } else if (allBlocks.size() > INODE_DIRECT_POINTERS) {
+            writeIndirectPointers(inode.overflowBlockIndex, allBlocks, sb.blockSize);
+        }
+
+        writeBitmap(sb.blockBitmapOffset, blockBitmap);
+        writeSuperblock(sb);
+    }
+
+    inode.fileSizeInBytes = newSize;
+    writeInode(static_cast<uint32_t>(inodeIndex), inode);
+}
+
 /* ---------------------------------------------------------------PRIVATE HELPER METHODS ------------------------------------------------------- */
 
 // Plans where each filesystem section starts on disk with proper block alignment
@@ -297,7 +412,7 @@ uint64_t FileSystemManager::alignToBlock(uint64_t offset, uint32_t blockSize) {
 // Fills specific disk area with zeros from exact byte position for given length
 // So that new tables or data blocks start completely empty and don't contain garbage data.
 // TODO: what are tables?
-void FileSystemManager::initializeSection(ofstream& file, uint64_t offset, uint64_t size, bool isBitmap) {
+void FileSystemManager::initializeSection(ostream& file, uint64_t offset, uint64_t size, bool isBitmap) {
     // TODO: o co chodzi z isBitmap? Może zrobić z tego template?
     file.seekp(offset);
     vector<char> buffer(1024, 0); 
@@ -311,7 +426,7 @@ void FileSystemManager::initializeSection(ofstream& file, uint64_t offset, uint6
 }
 
 // Copies 1024-byte zero buffer repeatedly until exact number of bytes is written
-void FileSystemManager::fillWithZeros(ofstream& file, const char* data, uint64_t size) {
+void FileSystemManager::fillWithZeros(ostream& file, const char* data, uint64_t size) {
     uint64_t bytesWritten = 0;
     const uint64_t BUFFER_SIZE = 1024;
     while (bytesWritten < size) {
