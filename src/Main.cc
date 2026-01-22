@@ -39,7 +39,6 @@ int main(){
                     fsManager.createVirtualFileSystem(askForFileSystemSize());
                     cout << "You can find it in the following location: " << FILE_SYSTEM_PATH << endl;
                     break;
-
                 case 2:
                     fsManager.copyFileFromPhysicalDisk(askForFileName());
                     break;
@@ -62,7 +61,6 @@ int main(){
                 case 8:
                     fsManager.displayFileSystemInformation();
                     break;
-
                 case 9:
                     fsManager.addLink(askForSourcePath(), askForLinkPath());
                     break;
@@ -70,6 +68,12 @@ int main(){
                     fsManager.removeLink(askForLinkPath());
                     break;
                 case 11:
+                    fsManager.addBytes(askForFilePath(), askForBytes());
+                    break;
+                case 12:
+                    fsManager.removeBytes(askForFilePath(), askForBytes());
+                    break;
+                case 13:
                     cout << "Goodbye!" << endl;
                     exit(0);
                     break;
@@ -81,7 +85,7 @@ int main(){
             cerr << "\n[ERROR] An error occurred: " << e.what() << endl;
             cout << "Returning to main menu..." << endl;
         }
-    } while (choice != 11);
+    } while (choice != 13);
 
     return 0;
 }

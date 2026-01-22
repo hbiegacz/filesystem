@@ -1,5 +1,6 @@
 #include "HelperMethods.h"
 #include <iostream>
+#include <cstdint>
 
 using namespace std;
 
@@ -16,7 +17,9 @@ void printOptions(){
     cout << " |     8. Display file system information                |" << endl;
     cout << " |     9. Add a link                                     |" << endl;
     cout << " |    10. Remove a link                                  |" << endl;
-    cout << " |    11. Exit                                           |" << endl;
+    cout << " |    11. Add bytes                                      |" << endl;
+    cout << " |    12. Remove bytes                                   |" << endl;
+    cout << " |    13. Exit                                           |" << endl;
     cout << " +-------------------------------------------------------+" << endl<<endl;
     cout << "Your choice: ";
 }
@@ -65,3 +68,22 @@ string askForLinkPath() {
     cout << endl;
     return linkPath;
 }
+
+uint64_t askForBytes() {
+    uint64_t bytes;
+    cout << "Please enter the number of bytes to add or remove. Example: 1024, 2048, 4096, 8192." << endl;
+    cout << "Your input: ";
+    cin >> bytes;
+    cout << endl;
+    return bytes;
+}
+
+string askForFilePath() {
+    string filePath;
+    cout << "Please enter the path to the file. \nExample: /file.txt or dir/another_file.txt" << endl;
+    cout << "Your input: ";
+    cin >> filePath;
+    cout << endl;
+    return filePath;
+}
+
