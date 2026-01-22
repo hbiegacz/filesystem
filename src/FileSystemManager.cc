@@ -178,6 +178,10 @@ void FileSystemManager::displayDirectory(string path) {
             cout << left << setw(32) << "Filename" << " | " << setw(10) << "Inode" << " | " << setw(10) << "Size" << " | " << "Type\n";
             cout << string(32, '-') << "-+------------+------------+--------------\n";
             for (const auto& item : items) {
+                string name = item.fileName;
+                if (name.empty() || name == "." || name == "..") continue;
+                if (item.inodeIndex == 0) continue;
+
                 Inode itemInode = readInode(item.inodeIndex);
                 string type = itemInode.isDirectory ? "DIR" : "FILE";
                 cout << left << setw(32) << item.fileName << " | " << setw(10) << item.inodeIndex << " | " << setw(10) << itemInode.fileSizeInBytes << " | " << type << endl;
@@ -453,7 +457,10 @@ void FileSystemManager::addDirectoryItem(uint32_t directoryInodeIndex, const str
     Inode dirInode = readInode(directoryInodeIndex);
     if (!dirInode.isDirectory) throw runtime_error("Target inode is not a directory");
 
-    DirectoryItem newItem{}; // TODO: why is this so complicated?
+    if (name.empty() || name == "." || name == "..") throw runtime_error("Invalid entry name: '.' and '..' are not allowed.");
+    if (targetInodeIndex == 0) throw runtime_error("Cannot add root directory as an entry.");
+
+    DirectoryItem newItem{}; 
     size_t nameLen = min(name.length(), sizeof(newItem.fileName) - 1);
     copy(name.begin(), name.begin() + nameLen, newItem.fileName);
     newItem.fileName[nameLen] = '\0';

@@ -81,7 +81,7 @@ int main(){
             cerr << "\n[ERROR] An error occurred: " << e.what() << endl;
             cout << "Returning to main menu..." << endl;
         }
-    } while (choice != 10);
+    } while (choice != 11);
 
     return 0;
 }
