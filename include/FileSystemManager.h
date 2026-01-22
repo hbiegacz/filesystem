@@ -46,14 +46,18 @@ class FileSystemManager{
         void writeSuperblock(const Superblock& superblock);
         
         std::vector<uint8_t> readBitmap(uint64_t offset, uint32_t bitsCount);
+        bool getBitmapBit(const std::vector<uint8_t>& bitmap, uint32_t bitIndex);
+        void setBitmapBit(std::vector<uint8_t>& bitmap, uint32_t bitIndex, bool value);
         void writeBitmap(uint64_t offset, const std::vector<uint8_t>& bitmap);
-        void setBitmapBit(uint64_t bitmapOffset, uint32_t index, bool value);
-        int findFreeInodeIndex(const std::vector<uint8_t>& inodeBitmap);
         std::vector<uint32_t> allocateDataBlocks(std::vector<uint8_t>& blockBitmap, uint32_t requiredBlocks, uint32_t blockSize);
         uint32_t allocateSingleBlock(Superblock& sb, std::vector<uint8_t>& blockBitmap);
 
-        void writeInode(uint32_t inodeIndex, const Inode& inode);
+        int findFreeInodeIndex(const std::vector<uint8_t>& inodeBitmap);
+        int findInodeByPath(const std::string& path);
+        int findInodeInDirectory(uint32_t directoryInodeIndex, const std::string& name);
         Inode readInode(uint32_t inodeIndex);
+        void writeInode(uint32_t inodeIndex, const Inode& inode);
+
 
         template <typename T>
         T readStruct(uint64_t offset);
@@ -72,10 +76,8 @@ class FileSystemManager{
 
         void addDirectoryItem(uint32_t directoryInodeIndex, const std::string& name, uint32_t targetInodeIndex);
         void removeDirectoryItem(uint32_t directoryInodeIndex, const std::string& name);
-        int findInodeInDirectory(uint32_t directoryInodeIndex, const std::string& name);
         std::vector<DirectoryItem> readDirectoryItems(const Inode& directoryInode);
 
-        int findInodeByPath(const std::string& path);
         void resolvePath(const std::string& path, uint32_t& parentInodeIndex, std::string& componentName);
 
         std::fstream openDiskStream(std::ios_base::openmode mode);
