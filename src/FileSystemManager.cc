@@ -42,7 +42,7 @@ void FileSystemManager::createVirtualFileSystem(uint64_t requestedDataSize) {
 
     // Create the "root" directory (/) 
     Inode rootInode{ .creationTime = time(nullptr), .isDirectory = true, .linksCount = 1 };
-    writeInode(0, rootInode); // TODO: why 0?
+    writeInode(0, rootInode); 
 
     sb.freeInodesCount--;
     writeSuperblock(sb);
@@ -60,32 +60,23 @@ void FileSystemManager::createVirtualFileSystem(uint64_t requestedDataSize) {
 // It finds free space, creates a file record (inode), copies the actual data, 
 // and finally adds the file's name to the root directory list.
 void FileSystemManager::copyFileFromPhysicalDisk(string fileName) {
-    cout << "Copying " << fileName << "..." << endl;
     ifstream src(fileName, ios::binary);
     if (!src) throw runtime_error("Src fail: " + fileName);
 
-    uint64_t size = getSourceFileSize(src);
     Superblock sb = readSuperblock();
-    uint32_t req = calculateRequiredBlocks(size, sb.blockSize);
-    
     vector<uint8_t> iMap = readBitmap(sb.inodeBitmapOffset, sb.inodesCount);
     vector<uint8_t> bMap = readBitmap(sb.blockBitmapOffset, sb.blocksCount);
 
-    int iIdx = findFreeInodeIndex(iMap);
-    if (iIdx < 0) throw runtime_error("No inodes");
+    uint64_t size = getSourceFileSize(src);
+    uint32_t req = calculateRequiredBlocks(size, sb.blockSize);
+
+    int iIdx = findFreeInodeIndex(iMap); 
+    if (iIdx < 0) throw runtime_error("No inodes"); 
 
     vector<uint32_t> data = allocateDataBlocks(bMap, req, sb.blockSize);
-    // uint32_t indir = (req > INODE_DIRECT_POINTERS) ? allocateSingleBlock(sb, bMap) : 0; //TODO: update single block allocation to take in bitmap
-    uint32_t indir = 0;
-    if (req > INODE_DIRECT_POINTERS) {
-        vector<uint32_t> indirBlock = allocateDataBlocks(bMap, 1, sb.blockSize);
-        indir = indirBlock[0];
-        sb.freeBlocksCount--; 
-    }
-    
+    uint32_t indir = (req > INODE_DIRECT_POINTERS) ? allocateSingleBlock(sb, bMap) : 0; 
 
-
-    // Create inode & update superblock
+    // Create inode & update superblock & update bitmaps
     Inode inode{ .creationTime = time(nullptr), .fileSizeInBytes = size, .overflowBlockIndex = indir };
     for (size_t i = 0; i < data.size() && i < INODE_DIRECT_POINTERS; ++i) inode.dataBlockIndexes[i] = data[i];
     
@@ -98,15 +89,13 @@ void FileSystemManager::copyFileFromPhysicalDisk(string fileName) {
 
 
     if (indir) writeIndirectPointers(indir, data, sb.blockSize);
-    writeFileDataToBlocks(src, data, size, sb.blockSize, sb.dataBlocksOffset);  // transfer the file data to the vfs
-    addDirectoryItem(0, filesystem::path(fileName).filename().string(), iIdx); // update root directory
+    writeFileDataToBlocks(src, data, size, sb.blockSize, sb.dataBlocksOffset);  // transfer the file data to the fs
+    addDirectoryItem(0, filesystem::path(fileName).filename().string(), iIdx);  // update root directory
 }
 
 // Copies a file from the virtual disk to the physical disk, output_path_.
 // Finds the file record, checks if it's not a folder, and then reads its data blocks back to a normal file.
 void FileSystemManager::copyFileFromVirtualDisk(string file_name){
-    cout << "Copying file '" << file_name << "' from virtual disk to physical disk..." << endl;
-
     Superblock sb = readSuperblock();
     
     int inodeIndex = findInodeInDirectory(0, file_name);
@@ -114,9 +103,8 @@ void FileSystemManager::copyFileFromVirtualDisk(string file_name){
 
     Inode inode = readInode(static_cast<uint32_t>(inodeIndex));
     if (inode.isDirectory) throw runtime_error("'" + file_name + "' is a directory, cannot copy as a file.");
-    extractFileData(inode, file_name, sb);
 
-    cout << "Successfully copied file '" << file_name << "' from virtual disk. You can find it in "<< this->output_path_ << endl;
+    extractFileData(inode, file_name, sb);
 }
 
 // Allocates a free isDirectory==trueinode, adds new DirectoryItem in the parent directory
@@ -145,7 +133,6 @@ void FileSystemManager::createDirectory(string path) {
     writeBitmap(sb.inodeBitmapOffset, inodeBitmap);
     writeSuperblock(sb);
     addDirectoryItem(parentInodeIndex, dirName, static_cast<uint32_t>(freeInodeIndex));
-    cout << "Directory '" << dirName << "' created successfully." << endl;
 }
 
 // Finds & removes directory item from the parent and frees its inode in the bitmap.
@@ -171,7 +158,6 @@ void FileSystemManager::deleteDirectory(string path) {
     writeBitmap(sb.inodeBitmapOffset, inodeBitmap); 
     
     removeDirectoryItem(parentInodeIndex, dirName);
-    cout << "Directory '" << dirName << "' deleted successfully." << endl;
 }
 
 void FileSystemManager::displayDirectory(string path) {
@@ -233,8 +219,7 @@ void FileSystemManager::displayFileSystemInformation(){
     cout << "------------------------------------------------------------\n";
 }
 
-int FileSystemManager::deleteFileFromVirtualDisk(string path) { // TODO: why not void?
-    cout << "Deleting file from virtual disk" << endl;
+void FileSystemManager::deleteFileFromVirtualDisk(string path) {
     uint32_t pIdx, inIdx; string name;
     resolvePath(path, pIdx, name);
     inIdx = findInodeInDirectory(pIdx, name);
@@ -247,16 +232,16 @@ int FileSystemManager::deleteFileFromVirtualDisk(string path) { // TODO: why not
     vector<uint8_t> bMap = readBitmap(sb.blockBitmapOffset, sb.blocksCount);
     vector<uint8_t> iMap = readBitmap(sb.inodeBitmapOffset, sb.inodesCount);
     
-    auto freeBlock = [&](uint32_t& blockIndex) {
+    auto freeBlock = [&](uint32_t& blockIndex) { // Labmda to set block as free & update superblock
         if (blockIndex == 0) return;
         setBitmapBit(bMap, blockIndex, false);
         sb.freeBlocksCount++;
         blockIndex = 0;
     };
 
-    for (int i = 0; i < INODE_DIRECT_POINTERS; ++i) freeBlock(in.dataBlockIndexes[i]);
-    if (in.overflowBlockIndex) {
-        vector<uint32_t> indir(sb.blockSize / 4);
+    for (int i = 0; i < INODE_DIRECT_POINTERS; ++i) freeBlock(in.dataBlockIndexes[i]); // Free direct blocks
+    if (in.overflowBlockIndex) {                                // For bigger files: free overflow blocks    
+        vector<uint32_t> indir(sb.blockSize / 4); // TODO: magic number & syntax??
         auto disk = openDiskStream(ios::in);
         disk.seekg(sb.dataBlocksOffset + (uint64_t)in.overflowBlockIndex * sb.blockSize);
         disk.read((char*)indir.data(), sb.blockSize);
@@ -270,9 +255,6 @@ int FileSystemManager::deleteFileFromVirtualDisk(string path) { // TODO: why not
     writeBitmap(sb.inodeBitmapOffset, iMap);
     writeSuperblock(sb);
     removeDirectoryItem(pIdx, name);
-    
-    cout << "Deleted " << name << endl;
-    return 0;
 }
 
 /* ---------------------------------------------------------------PRIVATE HELPER METHODS ------------------------------------------------------- */
@@ -319,20 +301,20 @@ uint64_t FileSystemManager::alignToBlock(uint64_t offset, uint32_t blockSize) {
 // So that new tables or data blocks start completely empty and don't contain garbage data.
 // TODO: what are tables?
 void FileSystemManager::initializeSection(ofstream& file, uint64_t offset, uint64_t size, bool isBitmap) {
+    // TODO: o co chodzi z isBitmap? Może zrobić z tego template?
     file.seekp(offset);
     vector<char> buffer(1024, 0); 
     
     if (!isBitmap) {
-        writeBuffer(file, buffer.data(), size);
+        fillWithZeros(file, buffer.data(), size);
         return;
     }
     
-    writeBuffer(file, buffer.data(), size);
+    fillWithZeros(file, buffer.data(), size);
 }
 
 // Copies 1024-byte zero buffer repeatedly until exact number of bytes is written
-// TODO: can we use writeStruct here?
-void FileSystemManager::writeBuffer(ofstream& file, const char* data, uint64_t size) {
+void FileSystemManager::fillWithZeros(ofstream& file, const char* data, uint64_t size) {
     uint64_t bytesWritten = 0;
     const uint64_t BUFFER_SIZE = 1024;
     while (bytesWritten < size) {
@@ -342,8 +324,6 @@ void FileSystemManager::writeBuffer(ofstream& file, const char* data, uint64_t s
     }
 }
 
-Superblock FileSystemManager::readSuperblock() { return readStruct<Superblock>(0); }
-void FileSystemManager::writeSuperblock(const Superblock& sb) { writeStruct<Superblock>(0, sb); }
 
 // A template helper to read any structure (Superblock, Inode, DirectoryItem) 
 // from a specific byte position on the disk.
@@ -363,11 +343,23 @@ void FileSystemManager::writeStruct(uint64_t offset, const T& data) {
     disk.write(reinterpret_cast<const char*>(&data), sizeof(T));
 }
 
-// Explicitly instantiate for used types
 template Inode FileSystemManager::readStruct<Inode>(uint64_t);
 template void FileSystemManager::writeStruct<Inode>(uint64_t, const Inode&);
 template Superblock FileSystemManager::readStruct<Superblock>(uint64_t);
 template void FileSystemManager::writeStruct<Superblock>(uint64_t, const Superblock&);
+
+Superblock FileSystemManager::readSuperblock() { return readStruct<Superblock>(0); }
+void FileSystemManager::writeSuperblock(const Superblock& sb) { writeStruct<Superblock>(0, sb); }
+
+// Saves a file's data (size, type, location) to the specific slot in the Inode Table 
+// TODO: better desc
+void FileSystemManager::writeInode(uint32_t idx, const Inode& in) {
+    writeStruct<Inode>(readSuperblock().inodeTableOffset + static_cast<uint64_t>(idx) * sizeof(Inode), in);
+}
+
+Inode FileSystemManager::readInode(uint32_t idx) {
+    return readStruct<Inode>(readSuperblock().inodeTableOffset + static_cast<uint64_t>(idx) * sizeof(Inode));
+}
 
 // Reads the usage map (bitmap) from disk. Since disks can only read full bytes,
 // we must round up to the next full byte. If we need 1.5 bytes, we read 2 bytes.
@@ -382,8 +374,6 @@ vector<uint8_t> FileSystemManager::readBitmap(uint64_t offset, uint32_t bitsCoun
     return bitmap;
 }
 
-
-// TODO: cant we use writeStruct?
 void FileSystemManager::writeBitmap(uint64_t offset, const vector<uint8_t>& bitmap) {
     auto diskFile = openDiskStream(ios::in | ios::out);
     diskFile.seekp(static_cast<streamoff>(offset));
@@ -405,31 +395,24 @@ vector<uint32_t> FileSystemManager::allocateDataBlocks(vector<uint8_t>& bMap, ui
 
     for (uint32_t i = 0; i < totalBits && blocks.size() < required; ++i) {
         if (!getBitmapBit(bMap, i)) { 
-            setBitmapBit(bMap, i, true); // wersja 2
+            setBitmapBit(bMap, i, true); 
             blocks.push_back(i);
         }
     }
 
     if (blocks.size() != required) { 
         for (uint32_t idx : blocks) {
-            setBitmapBit(bMap, idx, false); // wersja 2
+            setBitmapBit(bMap, idx, false); 
         }
         throw runtime_error("No space - needed " + to_string(required) + " blocks, found only " + to_string(blocks.size())); 
     }
     return blocks;
 }
 
-// Saves a file's data (size, type, location) to the specific slot in the Inode Table 
-// TODO: better desc
-void FileSystemManager::writeInode(uint32_t idx, const Inode& in) {
-    writeStruct<Inode>(readSuperblock().inodeTableOffset + static_cast<uint64_t>(idx) * sizeof(Inode), in);
-}
-
-Inode FileSystemManager::readInode(uint32_t idx) {
-    return readStruct<Inode>(readSuperblock().inodeTableOffset + static_cast<uint64_t>(idx) * sizeof(Inode));
-}
-
-
+// Stores file content in the VFS. 
+// Loops through the list of assigned blocks, 
+// fills each one with a piece of the file,
+// and stops when the whole file is written.
 void FileSystemManager::writeFileDataToBlocks(ifstream& sourceFile, const vector<uint32_t>& dataBlocks, 
                                                uint64_t fileSize, uint32_t blockSize, uint64_t dataBlocksOffset) {
     if (dataBlocks.empty()) return;
@@ -438,10 +421,10 @@ void FileSystemManager::writeFileDataToBlocks(ifstream& sourceFile, const vector
     auto diskFile = openDiskStream(ios::in | ios::out);
 
     for (uint32_t blockIndex : dataBlocks) {
-        uint64_t writeSize = min<uint64_t>(blockSize, bytesRemaining);
+        uint64_t writeSize = min<uint64_t>(blockSize, bytesRemaining); // full block or remaining bytes (leftovers)
         sourceFile.read(buffer.data(), static_cast<streamsize>(writeSize));
         
-        uint64_t blockOffset = dataBlocksOffset + static_cast<uint64_t>(blockIndex) * blockSize;
+        uint64_t blockOffset = dataBlocksOffset + static_cast<uint64_t>(blockIndex) * blockSize; //calculate address where to start writing
         diskFile.seekp(static_cast<streamoff>(blockOffset));
         diskFile.write(buffer.data(), static_cast<streamsize>(writeSize));
 
@@ -450,28 +433,32 @@ void FileSystemManager::writeFileDataToBlocks(ifstream& sourceFile, const vector
     }
 }
 
+// Reconstructs a file from the virtual disk.
+// Follows the map of blocks (direct pointers first, then overflow blocks),
+// reads the divided parts & glues them together into a single file.
 void FileSystemManager::extractFileData(const Inode& in, const string& name, const Superblock& sb) {
     if (!filesystem::exists(output_path_)) filesystem::create_directories(output_path_);
-    ofstream dest(filesystem::path(output_path_) / name, ios::binary);
+    ofstream destinationFile(filesystem::path(output_path_) / name, ios::binary); 
     ifstream disk(virtual_disk_path_, ios::binary);
     
-    uint64_t rem = in.fileSizeInBytes;
-    auto readB = [&](uint32_t bIdx) {
-        if (!rem || bIdx == 0) return;
-        uint64_t len = min<uint64_t>(sb.blockSize, rem);
+    uint64_t remaining = in.fileSizeInBytes;
+    auto readBlock = [&](uint32_t bIdx) { 
+        if (!remaining || bIdx == 0) return; // if no bytes left or invalid block index, skip
+        uint64_t len = min<uint64_t>(sb.blockSize, remaining); // read full block or remaining bytes (leftovers)
         vector<char> buf(len);
+
         disk.seekg(sb.dataBlocksOffset + (uint64_t)bIdx * sb.blockSize);
         disk.read(buf.data(), len);
-        dest.write(buf.data(), len);
-        rem -= len;
+        destinationFile.write(buf.data(), len);
+        remaining -= len;
     };
 
-    for (int i = 0; i < INODE_DIRECT_POINTERS; ++i) readB(in.dataBlockIndexes[i]);
-    if (rem > 0 && in.overflowBlockIndex > 0) {
-        vector<uint32_t> indir(sb.blockSize / 4);
+    for (int i = 0; i < INODE_DIRECT_POINTERS; ++i) readBlock(in.dataBlockIndexes[i]); // glue from direct ptrs
+    if (remaining > 0 && in.overflowBlockIndex > 0) {                                  // if there is more, read from overflow blocks
+        vector<uint32_t> indir(sb.blockSize / 4); //TODO: magic number
         disk.seekg(sb.dataBlocksOffset + (uint64_t)in.overflowBlockIndex * sb.blockSize);
         disk.read((char*)indir.data(), sb.blockSize);
-        for (auto b : indir) readB(b);
+        for (auto b : indir) readBlock(b);
     }
 }
 
@@ -549,7 +536,7 @@ void FileSystemManager::writeIndirectPointers(uint32_t indirectBlockIndex, const
 }
 
 // Scans the DirectoryItem list of a directory and returns the inode index of the entry with the given name.
-int FileSystemManager::findInodeInDirectory(uint32_t directoryInodeIndex, const string& name) { // TODO: change to variant?
+int FileSystemManager::findInodeInDirectory(uint32_t directoryInodeIndex, const string& name) {
     Inode dirInode = readInode(directoryInodeIndex);
     if (!dirInode.isDirectory) return -1;
 
@@ -593,7 +580,6 @@ vector<DirectoryItem> FileSystemManager::readDirectoryItems(const Inode& directo
     }
     return items;
 }
-
 
 int FileSystemManager::findInodeByPath(const string& path) {
     if (path == "/" || path.empty()) return 0;
@@ -689,6 +675,7 @@ uint32_t FileSystemManager::allocateSingleBlock(Superblock& sb, vector<uint8_t>&
     return allocated[0];
 }
 
+// Changes a bit in the bitmap to 1 or 0 using bit operations
 void FileSystemManager::setBitmapBit(vector<uint8_t>& bitmap, uint32_t bitIndex, bool value) {
     uint32_t byteIndex = bitIndex / BITS_IN_BYTE;
     uint32_t bitOffset = bitIndex % BITS_IN_BYTE;
@@ -697,6 +684,7 @@ void FileSystemManager::setBitmapBit(vector<uint8_t>& bitmap, uint32_t bitIndex,
     else bitmap[byteIndex] &= ~(1u << bitOffset);
 }
 
+// Returns the value of a bit in the bitmap using bit operations
 bool FileSystemManager::getBitmapBit(const vector<uint8_t>& bitmap, uint32_t bitIndex) {
     uint32_t byteIndex = bitIndex / BITS_IN_BYTE;
     uint32_t bitOffset = bitIndex % BITS_IN_BYTE;
