@@ -62,8 +62,9 @@ int main(){
                 case 8:
                     fsManager.displayFileSystemInformation();
                     break;
+
                 case 9:
-                    fsManager.deleteVirtualDisk();
+                    // add link
                     break;
                 case 10:
                     cout << "Goodbye!" << endl;

@@ -37,15 +37,6 @@ TEST_F(FileSystemCreationTest, FileHasCorrectSize) {
     ASSERT_GE(actualSize, expectedSize);
 }
 
-TEST_F(FileSystemCreationTest, SuperblockHasCorrectMagicNumber) {
-    fsManager.createVirtualFileSystem(1024 * 1024);
-    
-    std::ifstream diskFile(testDiskPath, std::ios::binary);
-    uint32_t magicNumber;
-    diskFile.read(reinterpret_cast<char*>(&magicNumber), sizeof(uint32_t));
-    
-    ASSERT_EQ(magicNumber, 0x53465350u);
-}
 
 TEST_F(FileSystemCreationTest, SuperblockFieldsAreCorrect) {
     fsManager.createVirtualFileSystem(1024 * 1024);
@@ -54,7 +45,6 @@ TEST_F(FileSystemCreationTest, SuperblockFieldsAreCorrect) {
     Superblock sb;
     diskFile.read(reinterpret_cast<char*>(&sb), sizeof(Superblock));
     
-    ASSERT_EQ(sb.magicNumber, 0x53465350u);
     ASSERT_EQ(sb.blockSize, 4096u);
     ASSERT_EQ(sb.inodesCount, 1024u);
     ASSERT_EQ(sb.freeInodesCount, 1023u);
@@ -73,9 +63,9 @@ TEST_F(FileSystemCreationTest, InodeTableIsZeroFilled) {
     diskFile.read(reinterpret_cast<char*>(&testInode), sizeof(Inode));
     
     ASSERT_EQ(testInode.creationTime, 0);
-    ASSERT_EQ(testInode.fileSize, 0);
+    ASSERT_EQ(testInode.fileSizeInBytes, 0);
     ASSERT_FALSE(testInode.isDirectory);
-    ASSERT_EQ(testInode.hardLinkCount, 0);
+    ASSERT_EQ(testInode.linksCount, 0);
 }
 
 TEST_F(FileSystemCreationTest, InodeBitmapIsZeroFilled) {
