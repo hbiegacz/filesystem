@@ -12,3 +12,17 @@ Aplikacja powinna umożliwiać:
 - Wyświetlanie zajętości dysku wirtualnego.
 
 **Wymagania**: Obsługa wielopoziomowej struktury katalogów i intuicyjny interfejs konsolowy.
+
+# Instrukcja obsługi
+Pobierz repozytorium 
+```bash
+  git clone https://github.com/hbiegacz/SOI_FILESYSTEM.git
+```
+Wejdź do katalogu SOI_FILESYSTEM i wykonaj następujące komendy:
+```bash
+  mkdir build
+  cd build
+  cmake ..
+  make
+  ./SOI_FILESYSTEM
+```
