@@ -18,11 +18,11 @@ Pobierz repozytorium
 ```bash
   git clone https://github.com/hbiegacz/SOI_FILESYSTEM.git
 ```
-Wejdź do katalogu SOI_FILESYSTEM i wykonaj następujące komendy:
+Wejdź do katalogu filesystem i wykonaj następujące komendy:
 ```bash
   mkdir build
   cd build
   cmake ..
   make
-  ./SOI_FILESYSTEM
+  ./filesystem
 ```
