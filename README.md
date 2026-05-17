@@ -1,4 +1,8 @@
 # System plików
+![Static Badge](https://img.shields.io/badge/c%2B%2B-00000?style=for-the-badge&logo=c%2B%2B&logoSize=auto&labelColor=blue&color=blue) ![Static Badge](https://img.shields.io/badge/GNU-BASH-00000?style=for-the-badge&logo=gnubash&logoSize=auto) ![Static Badge](https://img.shields.io/badge/cmake-00000?style=for-the-badge&logo=cmake&logoSize=auto&labelColor=%23064F8C&color=%23064F8C)
+
+
+
 Projekt stworzony w ramach przedmiotu _Systemy Operacyjne_ realizowanego na Politechnice Warszawskiej.
 
 **Cel**: Stworzenie na dysku systemu plików z wielopoziomowym katalogiem oraz aplikacji konsolowej do jego obsługi.
