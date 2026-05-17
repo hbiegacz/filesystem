@@ -1,4 +1,6 @@
 # System plików
+Projekt stworzony w ramach przedmiotu _Systemy Operacyjne_.
+
 **Cel**: Stworzenie na dysku systemu plików z wielopoziomowym katalogiem oraz aplikacji konsolowej do jego obsługi.
 
 Aplikacja powinna umożliwiać:
